@@ -1,7 +1,8 @@
 import { EventBus, Rule } from '@aws-cdk/aws-events';
-import { Context, CustomState, IChainable, StateMachine, Wait, WaitTime } from '@aws-cdk/aws-stepfunctions';
+import {  CustomState, IChainable, StateMachine, TaskInput, Wait, WaitTime } from '@aws-cdk/aws-stepfunctions';
 import * as cdk from '@aws-cdk/core';
 import * as targets from '@aws-cdk/aws-events-targets';
+import { Duration } from '@aws-cdk/core';
 
 export interface ICdkStepDemoProps extends cdk.StackProps {
   stage: string
@@ -14,21 +15,20 @@ export class CdkStepDemoStack extends cdk.Stack {
 
     const sendEventJson = {
       Type: "Task",
-      Resource: 'arn:aws:states:::events:putEvents',
+      Resource: 'arn:aws:states:::events:putEvents.waitForTaskToken',
       Parameters:
-        { Entries: [{ Detail: { Message: 'Hello from Step Functions!',TaskToken: Context.taskToken, }, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
+        { Entries: [{ Detail: { Message: 'Hello from Step Functions!',"TaskToken.$": "$$.Task.Token" }, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
     }
 
     const sendEvent = new CustomState(this, "send Event", { stateJson: sendEventJson })
 
-
-    const waitEventJson =  {
-      Type: "Task",
-      Resource: 'arn:aws:states:::events:putEvents.waitForTaskToken',
-      Parameters:
-        { Entries: [{ Detail: { Message: 'Hello from Step Functions!' ,"taskToken":'$$.Task.Token'}, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
-    }
-    const waitEvent = new CustomState(this, "wait Event", { stateJson: waitEventJson })
+    // const waitEventJson =  {
+    //   Type: "Task",
+    //   Resource: 'arn:aws:states:::events:putEvents.waitForTaskToken',
+    //   Parameters:
+    //     { Entries: [{ Detail: { Message: 'Hello from Step Functions!' ,"taskToken":''}, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
+    // }
+    // const waitEvent = new CustomState(this, "wait Event", { stateJson: waitEventJson })
 
     const wait = new Wait(this, 'Wait Until', {
       time: WaitTime.secondsPath('$.detail.waitSeconds'),
@@ -36,7 +36,8 @@ export class CdkStepDemoStack extends cdk.Stack {
 
     const stateMachine = new StateMachine(this, 'CDKStepDemoStateMachine', {
       definition: wait,
-      tracingEnabled: true
+      tracingEnabled: true,
+      timeout: Duration.minutes(2)
     });
 
     const bus = new EventBus(this, 'CDKStepDemoEventBus', {
@@ -51,6 +52,14 @@ export class CdkStepDemoStack extends cdk.Stack {
         detailType: ['DemoRequested']
       }
     });
+    // const cdkStepDemoEventsRule = new Rule(this, 'CDKStepDemoEventsBusRule', {
+    //   ruleName: `${props?.stage}-cdk-step-demo-events-rule`,
+    //   description: 'Rule matching demo events',
+    //   eventBus: bus,
+    //   eventPattern: {
+    //     detailType: ['DemoRequested']
+    //   }
+    // });
 
     cdkStepDemoEventsRule.addTarget(new targets.SfnStateMachine(stateMachine));
     bus.grantPutEventsTo(stateMachine)
