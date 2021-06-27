@@ -15,9 +15,9 @@ export class CdkStepDemoStack extends cdk.Stack {
 
     const sendEventJson = {
       Type: "Task",
-      Resource: 'arn:aws:states:::events:putEvents.waitForTaskToken',
+      Resource: 'arn:aws:states:::events:putEvents',
       Parameters:
-        { Entries: [{ Detail: { Message: 'Hello from Step Functions!',"TaskToken.$": "$$.Task.Token" }, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
+        { Entries: [{ Detail: { Message: 'Hello from Step Functions!',"OrderId.$":'$.detail.orderId' }, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
     }
 
     const sendEvent = new CustomState(this, "send Event", { stateJson: sendEventJson })
@@ -29,6 +29,7 @@ export class CdkStepDemoStack extends cdk.Stack {
     //     { Entries: [{ Detail: { Message: 'Hello from Step Functions!' ,"taskToken":''}, DetailType: 'DemoStarted', EventBusName: `${props?.stage}-cdk-step-demo`, Source: `${this.stackId}` }] }
     // }
     // const waitEvent = new CustomState(this, "wait Event", { stateJson: waitEventJson })
+
 
     const wait = new Wait(this, 'Wait Until', {
       time: WaitTime.secondsPath('$.detail.waitSeconds'),
