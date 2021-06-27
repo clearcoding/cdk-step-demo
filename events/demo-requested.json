@@ -1,0 +1,6 @@
+[{
+    "Source": "cdk-demo-api",
+    "DetailType": "DemoRequested",
+    "Detail": "{\"waitSeconds\":\"3\"}",
+    "EventBusName": "dev-cdk-step-demo"
+}]

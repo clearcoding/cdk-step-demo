@@ -1,0 +1,6 @@
+[{
+    "Source": "cdk-demo-api",
+    "DetailType": "DemoStarted",
+    "Detail": "{\"Message\":\"Hello from Step Functions!\"}",
+    "EventBusName": "dev-cdk-step-demo"
+}]
